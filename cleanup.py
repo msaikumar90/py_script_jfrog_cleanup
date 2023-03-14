@@ -5,16 +5,18 @@ import json
 # Get the JFrog Artifactory credentials and folder name from environment variables
 username = os.environ.get("JFROG_USERNAME")
 password = os.environ.get("JFROG_PASSWORD")
+repository = os.environ.get("JFROG_REPOSITORY")
+folder = os.environ.get("JFROG_FOLDER")
 
 # Build the JFrog Artifactory search API endpoint URL
-api_url = f"https://default.docker.cloud/artifactory/api/search/"
+api_url = f"https://{repository}.jfrog.io/artifactory/api/search/"
 
 # Find the Docker images that were created 4 weeks ago and never downloaded
-aql_query = 'items.find({"repo":"docker-local",' \
-            '"path":"my-folder",' \
-            '"name":{"$regex":".*\\.docker.*"},' \
-            '"created":{"$lt":"4w"},' \
-            '"stat.downloads":{"$eq":0}}).' \
+aql_query = f'items.find({{"repo":"{repository}",' \
+            f'"path":"{folder}",' \
+            f'"name":{{"$regex":".*\\.docker.*"}},' \
+            f'"created":{{"$lt":"4w"}},' \
+            f'"stat.downloads":{{"$eq":0}}}}).' \
             'include("name","created","stat.downloads")'
 
 # Build the headers for the HTTP request
@@ -33,7 +35,7 @@ for item in response.json()["results"]:
 
 # Delete each Docker image that was created 4 weeks ago and never downloaded using the Artifactory REST API
 for image in images_to_delete:
-    delete_url = f"https://default.docker.cloud/artifactory/docker-local/my-folder/{image['name']}"
+    delete_url = f"https://{repository}.jfrog.io/artifactory/{repository}/{folder}/{image['name']}"
     print(f"Deleting Docker image {image['name']}...")
     response = requests.delete(delete_url, auth=(username, password))
     if response.status_code == 204:
@@ -42,10 +44,10 @@ for image in images_to_delete:
         print(f"Failed to delete Docker image {image['name']}. Status code: {response.status_code}")
 
 # Find the Docker images that were last downloaded 4 weeks ago
-aql_query = 'items.find({"repo":"docker-local",' \
-            '"path":"my-folder",' \
-            '"name":{"$regex":".*\\.docker.*"},' \
-            '"stat.lastDownloaded":{"$lt":"4w"}}).' \
+aql_query = f'items.find({{"repo":"{repository}",' \
+            f'"path":"{folder}",' \
+            f'"name":{{"$regex":".*\\.docker.*"}},' \
+            f'"stat.lastDownloaded":{{"$lt":"4w"}}}}).' \
             'include("name","created","stat.lastDownloaded")'
 
 # Send the HTTP request to Artifactory to execute the AQL query
@@ -61,5 +63,4 @@ for item in response.json()["results"]:
 
 # Delete each Docker image that was last downloaded 4 weeks ago using the Artifactory REST API
 for image in images_to_delete:
-    delete_url = f"https://default.docker.cloud/artifactory/docker-local/my-folder/{image['name']}"
-    print(f"Deleting Docker image {image['name']}...")
+    delete_url = f"https://{repository}.
