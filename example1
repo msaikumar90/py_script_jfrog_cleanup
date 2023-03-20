@@ -1,0 +1,52 @@
+import os
+import requests
+
+# Set the environment variables for Artifactory credentials, folder name, and repository name
+artifactory_url = os.environ['ARTIFACTORY_URL']
+artifactory_user = os.environ['ARTIFACTORY_USER']
+artifactory_password = os.environ['ARTIFACTORY_PASSWORD']
+folder_path = os.environ['FOLDER_PATH']
+repository_name = os.environ['REPOSITORY_NAME']
+
+# Define the base URL for Artifactory API calls
+api_url = artifactory_url + '/api'
+
+# Set the JFrog Artifactory Query Language for deleting Docker images created 4 weeks before and never used
+delete_query_created = 'items.find({' \
+                       '"type":"docker",' \
+                       f'"repo":"{repository_name}",' \
+                       f'"path":"{folder_path}",' \
+                       f'"created<":{{\"$date\":\"now-4w\"}},' \
+                       '"stat.downloads":{"$eq":0}}).include("name","repo","path")'
+
+# Set the JFrog Artifactory Query Language for deleting Docker images last downloaded 4 weeks before
+delete_query_downloaded = 'items.find({' \
+                          '"type":"docker",' \
+                          f'"repo":"{repository_name}",' \
+                          f'"path":"{folder_path}",' \
+                          f'"stat.downloaded<":{{\"$date\":\"now-4w\"}}}).include("name","repo","path")'
+
+# Function to delete Docker images based on the specified JFrog Artifactory Query Language
+def delete_docker_images(query):
+    api_call_url = api_url + '/search/aql'
+    headers = {'Content-Type': 'text/plain'}
+    response = requests.post(api_call_url, auth=(artifactory_user, artifactory_password), headers=headers, data=query)
+    if response.status_code == 200:
+        for item in response.json()['results']:
+            item_path = item['path']
+            item_repo = item['repo']
+            item_name = item['name']
+            delete_url = api_url + f'/docker/{item_repo}/{item_path}/{item_name}'
+            response = requests.delete(delete_url, auth=(artifactory_user, artifactory_password))
+            if response.status_code == 204:
+                print(f'Deleted Docker image {item_name} in {item_repo}/{item_path}')
+            else:
+                print(f'Error deleting Docker image {item_name} in {item_repo}/{item_path}: {response.status_code}')
+    else:
+        print(f'Error searching for Docker images to delete: {response.status_code}')
+
+# Call the function to delete Docker images created 4 weeks before and never used
+delete_docker_images(delete_query_created)
+
+# Call the function to delete Docker images last downloaded 4 weeks before
+delete_docker_images(delete_query_downloaded)
