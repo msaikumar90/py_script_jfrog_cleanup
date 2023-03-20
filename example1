@@ -11,6 +11,8 @@ repository_name = os.environ['REPOSITORY_NAME']
 # Define the base URL for Artifactory API calls
 api_url = artifactory_url + '/api'
 
+
+
 # Set the JFrog Artifactory Query Language for deleting Docker images created 4 weeks before and never used
 delete_query_created = 'items.find({' \
                        '"type":"docker",' \
@@ -24,7 +26,8 @@ delete_query_downloaded = 'items.find({' \
                           '"type":"docker",' \
                           f'"repo":"{repository_name}",' \
                           f'"path":"{folder_path}",' \
-                          f'"stat.downloaded<":{{"$date":"now-4w"}}}).include("name","repo","path")'
+                          f'"stat.downloaded<":{{"$date":"now-4w"}}}}).include("name","repo","path")'
+
 
 
 
