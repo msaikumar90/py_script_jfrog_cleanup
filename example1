@@ -16,15 +16,16 @@ delete_query_created = 'items.find({' \
                        '"type":"docker",' \
                        f'"repo":"{repository_name}",' \
                        f'"path":"{folder_path}",' \
-                       f'"created<":{{\"$date\":\"now-4w\"}},' \
-                       '"stat.downloads":{"$eq":0}}).include("name","repo","path")'
+                       f'"created<":{{{{"$date":"now-4w"}}}},' \
+                       '"stat.downloads":{{"$eq":0}}}).include("name","repo","path")'
 
 # Set the JFrog Artifactory Query Language for deleting Docker images last downloaded 4 weeks before
 delete_query_downloaded = 'items.find({' \
                           '"type":"docker",' \
                           f'"repo":"{repository_name}",' \
                           f'"path":"{folder_path}",' \
-                          f'"stat.downloaded<":{{\"$date\":\"now-4w\"}}}).include("name","repo","path")'
+                          f'"stat.downloaded<":{{{{"$date":"now-4w"}}}}}).include("name","repo","path")'
+
 
 # Function to delete Docker images based on the specified JFrog Artifactory Query Language
 def delete_docker_images(query):
